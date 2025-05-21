@@ -1,0 +1,3 @@
+# Seed Project Renamer
+
+A specialized utility for renaming and bootstrapping seed projects after cloning. This tool renames all occurrences of the seed project name across files and directories, supporting multiple naming conventions (kebab-case, PascalCase, camelCase, snake_case). It's primarily designed for my own opinionated project structures that use Terraform, AWS resources, and follow specific conventions for both NPM libraries (flat structure) and microservices (src/ directory structure). While it may work for similar project templates, it contains hardcoded assumptions about project organization and cleanup procedures that may require adaptation for other use cases.
