@@ -1,0 +1,32 @@
+{
+  "name": "@dwkerwin/seed-project-renamer",
+  "version": "0.1.0",
+  "description": "A utility for bootstrapping seed projects by consistently renaming all references across files, supporting multiple naming conventions and project structures",
+  "main": "index.js",
+  "bin": {
+    "seed-project-renamer": "./rename.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "seed",
+    "project",
+    "rename",
+    "template",
+    "bootstrap",
+    "initialization"
+  ],
+  "author": "Dave Kerwin",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dwkerwin/seed-project-renamer.git"
+  },
+  "dependencies": {
+    "glob": "^10.3.10"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+} 
