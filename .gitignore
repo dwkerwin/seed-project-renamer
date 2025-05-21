@@ -1,0 +1,11 @@
+# Dependency directories
+node_modules/
+
+# Logs
+*.log
+
+# Package-lock files (optional)
+# package-lock.json
+
+# Mac files
+.DS_Store
