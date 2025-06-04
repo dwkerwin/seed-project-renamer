@@ -1,7 +1,7 @@
 {
   "name": "@dwkerwin/seed-project-renamer",
-  "version": "0.1.0",
-  "description": "A utility for bootstrapping seed projects by consistently renaming all references across files, supporting multiple naming conventions and project structures",
+  "version": "0.2.0",
+  "description": "A utility for bootstrapping seed projects by consistently renaming all references across files, supporting multiple naming conventions and explicit source project specification via --from parameter",
   "main": "index.js",
   "bin": {
     "seed-project-renamer": "./rename.js"
@@ -29,4 +29,4 @@
   "engines": {
     "node": ">=18.0.0"
   }
-} 
+}
