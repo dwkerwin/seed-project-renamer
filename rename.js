@@ -4,7 +4,7 @@
  * Seed Project Rename and Cleanup Utility
  * 
  * This script:
- * 1. Renames all occurrences of the seed project name throughout the codebase
+ * 1. Renames all occurrences of the specified seed project name throughout the codebase
  * 2. Updates package.json to remove the rename script
  * 3. Removes itself and its directory when finished
  */
@@ -14,18 +14,70 @@ const path = require('path');
 const { execSync } = require('child_process');
 const { glob } = require('glob');
 
-// Define the seed project name (kebab-case)
-const SEED_NAME_KEBAB = 'seed-nodejs-npm-lib';
-const SEED_NAME_PASCAL = 'Seed-Nodejs-Npm-Lib';
-const SEED_NAME_CAMEL = 'SeedNodejsNpmLib';
-const SEED_NAME_SNAKE = 'seed_nodejs_npm_lib';
-const SEED_TG_NAME = 'seed-nodejs-npm-lib-tg';
+// Generate seed project name variations
+function generateSeedVariations(seedName) {
+  const kebab = seedName;
+  const pascal = seedName.split('-')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join('-');
+  const camel = seedName.split('-')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('');
+  const snake = seedName.replace(/-/g, '_').toLowerCase();
+  
+  // Create shortened version for target group name if needed
+  let tg = seedName;
+  if (seedName.length > 29) {
+    tg = seedName.replace(/[aeiou]/g, '').substring(0, 29);
+  }
+  tg += "-tg";
+  
+  return { kebab, pascal, camel, snake, tg };
+}
+
+// Auto-detect seed project name from package.json or folder name
+function autoDetectSeedName() {
+  // Method 1: Check package.json files (Node.js projects)
+  const packageJsonPaths = [
+    path.join(process.cwd(), 'package.json'),
+    path.join(process.cwd(), 'src', 'package.json')
+  ];
+  
+  for (const packageJsonPath of packageJsonPaths) {
+    if (fs.existsSync(packageJsonPath)) {
+      try {
+        const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+        const name = packageJson.name;
+        
+        // Check if this looks like a seed project name
+        if (name && name.startsWith('seed-')) {
+          console.log(`🔍 Auto-detected seed project: ${name} (from ${packageJsonPath})`);
+          return name;
+        }
+      } catch (error) {
+        // Continue to next method if this one has issues
+        continue;
+      }
+    }
+  }
+  
+  // Method 2: Use current directory name (language agnostic)
+  const currentDir = path.basename(process.cwd());
+  if (currentDir && currentDir.startsWith('seed-')) {
+    console.log(`🔍 Auto-detected seed project: ${currentDir} (from directory name)`);
+    return currentDir;
+  }
+  
+  // If we can't auto-detect, provide helpful error
+  return null;
+}
 
 // Parse command line arguments
 function parseArgs() {
   const args = process.argv.slice(2);
   const result = {
     projectName: null,
+    fromSeed: null, // Will auto-detect if not provided
     isDotNet: false,
     help: false
   };
@@ -34,7 +86,10 @@ function parseArgs() {
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     
-    if (arg === '--dotnet') {
+    if (arg === '--from' && i + 1 < args.length) {
+      result.fromSeed = args[i + 1];
+      i++; // Skip next argument since it's the value for --from
+    } else if (arg === '--dotnet') {
       result.isDotNet = true;
     } else if (arg === '--help' || arg === '-h') {
       result.help = true;
@@ -58,23 +113,47 @@ async function main() {
 Usage: npx @dwkerwin/seed-project-renamer [options] your-project-name
 
 Options:
-  --dotnet    Process as a .NET project (handle .csproj files and solution structure)
-  --help, -h  Show this help message
+  --from <name>   Source seed project name to rename from (auto-detects if not provided)
+  --dotnet        Process as a .NET project (handle .csproj files and solution structure)
+  --help, -h      Show this help message
 
 Examples:
   npx @dwkerwin/seed-project-renamer my-new-service
-  npx @dwkerwin/seed-project-renamer --dotnet MyNewApi
+  npx @dwkerwin/seed-project-renamer --from seed-nodejs-npm-lib my-new-service
+  npx @dwkerwin/seed-project-renamer --from seed-nodejs-koa-nextjs-ecsfargate-api my-api
+  npx @dwkerwin/seed-project-renamer --dotnet --from seed-csharp-api MyNewApi
+
+Note: When --from is not specified, the tool will auto-detect the seed project name
+by looking for seed-* names in package.json files, or by using the directory name.
 `);
     process.exit(0);
   }
 
   // Get the new project name from command line
   const name = args.projectName;
+  let fromSeed = args.fromSeed;
   const isDotNet = args.isDotNet;
 
   if (!name) {
-    console.error('Usage: npx @dwkerwin/seed-project-renamer your-project-name');
+    console.error('❌ Error: Project name is required.');
+    console.error('Usage: npx @dwkerwin/seed-project-renamer [--from <seed-name>] your-project-name');
+    console.error('Run with --help for more examples.');
     process.exit(1);
+  }
+
+  // Auto-detect seed name if not provided
+  if (!fromSeed) {
+    fromSeed = autoDetectSeedName();
+    if (!fromSeed) {
+      console.error('❌ Error: Could not auto-detect seed project name.');
+      console.error('Please specify the source seed project with --from parameter.');
+      console.error('');
+      console.error('Examples:');
+      console.error('  --from seed-nodejs-npm-lib');
+      console.error('  --from seed-nodejs-koa-nextjs-ecsfargate');
+      console.error('  --from seed-nodejs-koa-nextjs-ecsfargate-api');
+      process.exit(1);
+    }
   }
 
   // Validate project name format (allow letters, numbers, and hyphens)
@@ -82,6 +161,12 @@ Examples:
     console.error('❌ Error: Project name must contain only letters, numbers, and hyphens.');
     process.exit(1);
   }
+
+  // Generate seed name variations
+  const seedConfig = generateSeedVariations(fromSeed);
+  
+  console.log(`🔍 Renaming from seed: ${fromSeed}`);
+  console.log(`🚀 Renaming project to: ${name}`);
 
   // Generate variations of the new name
   const namePascal = name.split('-')
@@ -105,10 +190,54 @@ Examples:
 
   // Define ignore patterns for files we don't want to process
   const ignorePatterns = [
+    // Dependencies
     '**/node_modules/**',
+    
+    // Version control
     '**/.git/**',
-    // We will handle package-lock.json separately
+    
+    // Build outputs and cache directories
+    '**/build/**',
+    '**/dist/**',
+    '**/.next/**',
+    '**/out/**',
+    '**/coverage/**',
+    '**/.terraform/**',
+    '**/.terraform.lock.hcl',
+    
+    // Cache and temporary files
+    '**/.cache/**',
+    '**/tmp/**',
+    '**/temp/**',
+    '**/.temp/**',
+    
+    // Log files
+    '**/*.log',
+    '**/logs/**',
+    
+    // IDE and editor files
+    '**/.vscode/**',
+    '**/.idea/**',
+    '**/*.swp',
+    '**/*.swo',
+    '**/*~',
+    
+    // OS files
+    '**/.DS_Store',
+    '**/Thumbs.db',
+    
+    // Package manager files (these get regenerated)
+    '**/package-lock.json',
+    '**/yarn.lock',
+    '**/pnpm-lock.yaml',
+    
+    // TypeScript build info
+    '**/*.tsbuildinfo',
+    
+    // Seed project specific cleanup
     '**/scripts/init/**',
+    
+    // Binary files
     '**/*.jpg',
     '**/*.jpeg',
     '**/*.png',
@@ -120,21 +249,21 @@ Examples:
     '**/*.gz',
     '**/*.jar',
     '**/*.exe',
-    '**/*.bin'
+    '**/*.bin',
+    '**/*.dll',
+    '**/*.pdb'
   ];
 
   // Define replacements
   const replacements = [
-    { from: SEED_NAME_KEBAB, to: name.toLowerCase() },
-    { from: SEED_NAME_PASCAL, to: namePascal },
-    { from: SEED_NAME_CAMEL, to: nameCamel },
-    { from: SEED_NAME_SNAKE, to: nameSnake },
-    { from: SEED_TG_NAME, to: nameTg }
+    { from: seedConfig.kebab, to: name.toLowerCase() },
+    { from: seedConfig.pascal, to: namePascal },
+    { from: seedConfig.camel, to: nameCamel },
+    { from: seedConfig.snake, to: nameSnake },
+    { from: seedConfig.tg, to: nameTg }
   ];
 
   try {
-    console.log(`🚀 Renaming project to: ${name}`);
-    
     // Find all files in the project excluding ignored patterns
     const files = await glob('**/*', { 
       ignore: ignorePatterns,
@@ -200,29 +329,29 @@ Examples:
     if (isDotNet) {
       // Rename directories
       renameIfExists(
-        path.join(process.cwd(), SEED_NAME_CAMEL), 
+        path.join(process.cwd(), seedConfig.camel), 
         path.join(process.cwd(), nameCamel)
       );
       
       renameIfExists(
-        path.join(process.cwd(), `${SEED_NAME_CAMEL}.Tests`), 
+        path.join(process.cwd(), `${seedConfig.camel}.Tests`), 
         path.join(process.cwd(), `${nameCamel}.Tests`)
       );
       
       // Rename solution file
       renameIfExists(
-        path.join(process.cwd(), `${SEED_NAME_CAMEL}.sln`), 
+        path.join(process.cwd(), `${seedConfig.camel}.sln`), 
         path.join(process.cwd(), `${nameCamel}.sln`)
       );
       
       // Rename .csproj files
       renameIfExists(
-        path.join(process.cwd(), nameCamel, `${SEED_NAME_CAMEL}.csproj`), 
+        path.join(process.cwd(), nameCamel, `${seedConfig.camel}.csproj`), 
         path.join(process.cwd(), nameCamel, `${nameCamel}.csproj`)
       );
       
       renameIfExists(
-        path.join(process.cwd(), `${nameCamel}.Tests`, `${SEED_NAME_CAMEL}.Tests.csproj`), 
+        path.join(process.cwd(), `${nameCamel}.Tests`, `${seedConfig.camel}.Tests.csproj`), 
         path.join(process.cwd(), `${nameCamel}.Tests`, `${nameCamel}.Tests.csproj`)
       );
     }
@@ -254,53 +383,24 @@ Examples:
       }
     }
     
-    // Create cleanup script
-    const cleanupCommand = `
-      echo "Removing initialization scripts directory...";
-      rm -rf "${path.join(process.cwd(), 'scripts', 'init')}";
+    // Remove initialization scripts directory if it exists
+    const initScriptsPath = path.join(process.cwd(), 'scripts', 'init');
+    if (fs.existsSync(initScriptsPath)) {
+      console.log('Removing initialization scripts directory...');
+      fs.rmSync(initScriptsPath, { recursive: true, force: true });
       
-      # Check if scripts directory is empty and remove it if it is
-      if [ -z "$(ls -A "${path.join(process.cwd(), 'scripts')}")" ]; then
-        echo "Removing empty scripts directory...";
-        rm -rf "${path.join(process.cwd(), 'scripts')}";
-      fi
-      
-      # Only remove the root package.json if there's another one in src/
-      if [ -f "${path.join(process.cwd(), 'src', 'package.json')}" ]; then
-        echo "Removing root package.json (src/package.json exists)...";
-        rm -f "${path.join(process.cwd(), 'package.json')}";
-      else
-        echo "Keeping root package.json (no src/package.json found)...";
-      fi
-      
-      echo "\\n🎉 All done! Your project '${name}' is ready to use.";
-      echo "\\nRemember to:";
-      
-      if [ "${isDotNet}" = "true" ]; then
-        echo "1. Update project dependencies (run 'dotnet restore')";
-        echo "2. Review your Terraform resources in ${nameCamel}/terraform/main.tf";
-      else
-        echo "1. Update package-lock.json (run 'npm install')";
-        if [ -d "${path.join(process.cwd(), 'src')}" ]; then
-          echo "2. Review your Terraform resources in src/terraform/main.tf";
-        else
-          echo "2. Review your project structure and configuration";
-        fi
-      fi
-      
-      echo "3. Update README.md with:";
-      echo "   - A clear description of your service's purpose";
-      echo "   - Update the title and introduction";
-      echo "   - Remove the 'Renaming the Seed Project' section";
-      
-      echo "4. Regenerate package-lock.json with: npm install";
-    `;
+      // Check if scripts directory is empty and remove it if it is
+      const scriptsPath = path.join(process.cwd(), 'scripts');
+      if (fs.existsSync(scriptsPath)) {
+        const scriptsContents = fs.readdirSync(scriptsPath);
+        if (scriptsContents.length === 0) {
+          console.log('Removing empty scripts directory...');
+          fs.rmSync(scriptsPath, { recursive: true, force: true });
+        }
+      }
+    }
     
-    // Create and execute the cleanup script
-    const tempScriptPath = path.join(process.cwd(), '.temp-cleanup.sh');
-    fs.writeFileSync(tempScriptPath, cleanupCommand, { mode: 0o755 });
-    
-    // Update package-lock.json to match new name before removing scripts
+    // Update package-lock.json to match new name
     try {
       console.log('Regenerating package-lock.json...');
       execSync('npm install', { stdio: 'inherit' });
@@ -308,7 +408,26 @@ Examples:
       console.log('Warning: Could not regenerate package-lock.json. You should run npm install manually.');
     }
     
-    execSync(`bash ${tempScriptPath} && rm ${tempScriptPath}`, { stdio: 'inherit' });
+    console.log('\n🎉 All done! Your project is ready to use.');
+    console.log('\nRemember to:');
+    
+    if (isDotNet) {
+      console.log('1. Update project dependencies (run \'dotnet restore\')');
+      console.log(`2. Review your Terraform resources in ${nameCamel}/terraform/main.tf`);
+    } else {
+      console.log('1. Update package-lock.json (run \'npm install\')');
+      if (fs.existsSync(path.join(process.cwd(), 'src'))) {
+        console.log('2. Review your Terraform resources in src/terraform/main.tf');
+      } else {
+        console.log('2. Review your project structure and configuration');
+      }
+    }
+    
+    console.log('3. Update README.md with:');
+    console.log('   - A clear description of your service\'s purpose');
+    console.log('   - Update the title and introduction');
+    console.log('   - Remove the \'Renaming the Seed Project\' section');
+    console.log('4. Regenerate package-lock.json with: npm install');
     
     return { success: true, name };
   } catch (error) {
