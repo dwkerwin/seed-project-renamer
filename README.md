@@ -1,6 +1,6 @@
 # Seed Project Renamer
 
-A specialized utility for renaming and bootstrapping seed projects after cloning. This tool renames all occurrences of the seed project name across files and directories, supporting multiple naming conventions (kebab-case, PascalCase, camelCase, snake_case). It works with any seed project by explicitly specifying the source project name.
+A specialized utility for renaming and bootstrapping seed projects after cloning. This tool renames all occurrences of the seed project name across files and directories, supporting multiple naming conventions (kebab-case, PascalCase, camelCase, snake_case). It automatically renames directories that match the seed project name and works with any seed project by explicitly specifying the source project name.
 
 ## Installation
 
@@ -77,11 +77,12 @@ npx @dwkerwin/seed-project-renamer --from seed-csharp-api --dotnet MyNewApi
 ## How It Works
 
 The tool:
-1. **Takes the source seed project name** via `--from` parameter (required)
-2. **Replaces all occurrences** of that seed name with your new project name
-3. **Handles multiple naming formats** (kebab-case, PascalCase, camelCase, snake_case) 
-4. **Updates package.json files** and removes initialization scripts
-5. **Works directory by directory** - run multiple times for multi-service projects
+1. **Takes the source seed project name** via `--from` parameter (auto-detects if not provided)
+2. **Replaces all occurrences** of that seed name with your new project name in file contents
+3. **Renames directories** that match the seed project name (in any naming format)
+4. **Handles multiple naming formats** (kebab-case, PascalCase, camelCase, snake_case) 
+5. **Updates package.json files** and removes initialization scripts
+6. **Works with any project structure** - handles both single and multi-service projects
 
 ## Supported Seed Projects
 
