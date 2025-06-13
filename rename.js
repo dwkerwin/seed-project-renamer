@@ -326,8 +326,10 @@ by looking for seed-* names in package.json files, or by using the directory nam
     console.log(`Made ${stats.totalReplacements} replacements\n`);
     
     // Rename directories and files
+    console.log('🔄 Renaming directories and files...');
+    
     if (isDotNet) {
-      // Rename directories
+      // Rename directories for .NET projects
       renameIfExists(
         path.join(process.cwd(), seedConfig.camel), 
         path.join(process.cwd(), nameCamel)
@@ -353,6 +355,33 @@ by looking for seed-* names in package.json files, or by using the directory nam
       renameIfExists(
         path.join(process.cwd(), `${nameCamel}.Tests`, `${seedConfig.camel}.Tests.csproj`), 
         path.join(process.cwd(), `${nameCamel}.Tests`, `${nameCamel}.Tests.csproj`)
+      );
+    } else {
+      // Rename directories for non-.NET projects (Node.js, etc.)
+      // Check for directories that match the seed project name in various formats
+      
+      // Try kebab-case directory (most common for Node.js projects)
+      renameIfExists(
+        path.join(process.cwd(), seedConfig.kebab),
+        path.join(process.cwd(), name.toLowerCase())
+      );
+      
+      // Try PascalCase directory
+      renameIfExists(
+        path.join(process.cwd(), seedConfig.pascal),
+        path.join(process.cwd(), namePascal)
+      );
+      
+      // Try CamelCase directory
+      renameIfExists(
+        path.join(process.cwd(), seedConfig.camel),
+        path.join(process.cwd(), nameCamel)
+      );
+      
+      // Try snake_case directory
+      renameIfExists(
+        path.join(process.cwd(), seedConfig.snake),
+        path.join(process.cwd(), nameSnake)
       );
     }
     
