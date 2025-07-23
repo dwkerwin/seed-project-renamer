@@ -1,13 +1,14 @@
 {
   "name": "@dwkerwin/seed-project-renamer",
-  "version": "0.2.4",
+  "version": "1.0.2",
   "description": "A utility for bootstrapping seed projects by consistently renaming all references across files, supporting multiple naming conventions and explicit source project specification via --from parameter",
   "main": "index.js",
   "bin": {
     "seed-project-renamer": "./rename.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha",
+    "rename": "node ./rename.js"
   },
   "keywords": [
     "seed",
@@ -28,5 +29,11 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "chai": "^5.2.1",
+    "fs-extra": "^11.3.0",
+    "mocha": "^11.7.1",
+    "sinon": "^21.0.0"
   }
 }
