@@ -141,3 +141,27 @@ npm login
 # Publish the package (scoped packages require --access=public)
 npm publish --access=public
 ```
+
+## Testing
+
+This project uses [Mocha](https://mochajs.org/) and [Chai](https://www.chaijs.com/) for testing. The tests are located in the `test` directory.
+
+### Test Strategy
+
+The testing strategy is to use a real seed project as a test bed. A sample seed project is located in `test/assets`. For each test run, a temporary copy of the seed project is created in `test/test-output`. The renamer is then run on this temporary copy, and assertions are made to ensure that the renaming was successful. 
+
+By default, the test output directory is cleaned up after each test run. However, you can comment out the cleanup line in the `after()` hook in `test/rename.test.js` to inspect the renamed project files manually. The `test/test-output` directory will contain the fully processed project showing exactly what the renamer produced.
+
+This approach provides a high degree of confidence that the renamer works as expected in a real-world scenario.
+
+### Running Tests
+
+To run the tests, use the following command:
+
+```bash
+npm test
+```
+
+## License
+
+This project is licensed under the MIT License.

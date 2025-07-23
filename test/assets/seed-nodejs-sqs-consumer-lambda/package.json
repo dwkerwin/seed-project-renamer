@@ -1,0 +1,29 @@
+{
+  "name": "seed-nodejs-sqs-consumer-lambda",
+  "version": "1.0.0",
+  "description": "AWS Lambda SQS consumer",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --recursive --require test/mocha-root.js --exit --timeout 1800000",
+    "start": "node local.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-sqs": "^3.826.0",
+    "@dwkerwin/ssm-config": "^1.1.0",
+    "bunyan": "^1.8.15",
+    "chalk": "^4.1.2",
+    "dotenv": "^16.5.0"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.826.0",
+    "@aws-sdk/client-s3": "^3.826.0",
+    "chai": "^4.5.0",
+    "eslint": "^8.57.1",
+    "mocha": "^11.5.0",
+    "replace-in-file": "^8.3.0",
+    "sinon": "^15.2.0",
+    "uuid": "^9.0.1"
+  },
+  "author": "",
+  "license": "ISC"
+}

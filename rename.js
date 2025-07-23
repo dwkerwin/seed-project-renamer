@@ -28,6 +28,9 @@ function generateSeedVariations(seedName) {
     .join('');
 
   const snake = seedName.replace(/-/g, '_').toLowerCase();
+  const snakePascal = seedName.split('-')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join('_');
   
   // Create shortened version for target group name if needed
   let tgBase = seedName;
@@ -37,7 +40,7 @@ function generateSeedVariations(seedName) {
   const tg = tgBase + "-tg";
   const tgLower = tgBase.toLowerCase() + "-tg";
   
-  return { kebab, pascal, camel, snake, tg, tgLower, lowerKebab };
+  return { kebab, pascal, camel, snake, snakePascal, tg, tgLower, lowerKebab };
 }
 
 // Auto-detect seed project name from package.json or folder name
@@ -84,7 +87,8 @@ function parseArgs() {
     projectName: null,
     fromSeed: null, // Will auto-detect if not provided
     isDotNet: false,
-    help: false
+    help: false,
+    version: false
   };
 
   // Check for options
@@ -98,6 +102,8 @@ function parseArgs() {
       result.isDotNet = true;
     } else if (arg === '--help' || arg === '-h') {
       result.help = true;
+    } else if (arg === '--version' || arg === '-v') {
+      result.version = true;
     } else if (!arg.startsWith('--') && !result.projectName) {
       // First non-option argument is the project name
       result.projectName = arg;
@@ -107,8 +113,15 @@ function parseArgs() {
   return result;
 }
 
+// Wrapper for process.exit to allow for stubbing in tests
+const utils = {
+  exit: (code) => {
+    process.exit(code);
+  }
+};
+
 // Main function
-async function main() {
+async function main(options = {}) {
   // Parse command line arguments
   const args = parseArgs();
   
@@ -120,6 +133,7 @@ Usage: npx @dwkerwin/seed-project-renamer [options] your-project-name
 Options:
   --from <name>   Source seed project name to rename from (auto-detects if not provided)
   --dotnet        Process as a .NET project (handle .csproj files and solution structure)
+  --version, -v   Show version number
   --help, -h      Show this help message
 
 Examples:
@@ -131,19 +145,26 @@ Examples:
 Note: When --from is not specified, the tool will auto-detect the seed project name
 by looking for seed-* names in package.json files, or by using the directory name.
 `);
-    process.exit(0);
+    utils.exit(0);
+  }
+
+  // Show version if requested
+  if (args.version) {
+    const packageJson = require('./package.json');
+    console.log(packageJson.version);
+    utils.exit(0);
   }
 
   // Get the new project name from command line
-  const name = args.projectName;
-  let fromSeed = args.fromSeed;
-  const isDotNet = args.isDotNet;
+  const name = options.projectName || args.projectName;
+  let fromSeed = options.fromSeed || args.fromSeed;
+  const isDotNet = options.isDotNet || args.isDotNet;
 
   if (!name) {
     console.error('❌ Error: Project name is required.');
     console.error('Usage: npx @dwkerwin/seed-project-renamer [--from <seed-name>] your-project-name');
     console.error('Run with --help for more examples.');
-    process.exit(1);
+    utils.exit(1);
   }
 
   // Auto-detect seed name if not provided
@@ -157,14 +178,14 @@ by looking for seed-* names in package.json files, or by using the directory nam
       console.error('  --from seed-nodejs-npm-lib');
       console.error('  --from seed-nodejs-koa-nextjs-ecsfargate');
       console.error('  --from seed-nodejs-koa-nextjs-ecsfargate-api');
-      process.exit(1);
+      utils.exit(1);
     }
   }
 
   // Validate project name format (allow letters, numbers, and hyphens)
   if (!/^[a-zA-Z0-9-]+$/.test(name)) {
     console.error('❌ Error: Project name must contain only letters, numbers, and hyphens.');
-    process.exit(1);
+    utils.exit(1);
   }
 
   // Generate seed name variations
@@ -185,6 +206,17 @@ by looking for seed-* names in package.json files, or by using the directory nam
 
   // Convert to snake_case (lowercase with underscores)
   const nameSnake = name.replace(/-/g, '_').toLowerCase();
+  const nameSnakePascal = name.split('-')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join('_');
+
+  // Generate abbreviated version for the new name using the same simple logic
+  const nameParts = name.split('-');
+  let nameAbbreviated = '';
+  if (nameParts.length >= 2) {
+    // For "my-new-project", this creates "my_new_project" (just use all parts for new names)
+    nameAbbreviated = nameParts.join('_');
+  }
 
   // Create shortened version for target group name if needed
   let nameTg = name;
@@ -265,14 +297,19 @@ by looking for seed-* names in package.json files, or by using the directory nam
     { from: seedConfig.tg, to: nameTg },
     { from: seedConfig.tgLower, to: nameTg.toLowerCase() },
 
+    // Handle the full project name first (most specific)
+    { from: seedConfig.kebab, to: name },
+    { from: seedConfig.lowerKebab, to: name.toLowerCase() },
+
     // Handle structured cases
     { from: seedConfig.pascal, to: namePascal },
     { from: seedConfig.camel, to: nameCamel },
     { from: seedConfig.snake, to: nameSnake },
+    { from: seedConfig.snakePascal, to: nameSnakePascal },
     
-    // Handle the general kebab case last
-    { from: seedConfig.kebab, to: name },
-    { from: seedConfig.lowerKebab, to: name.toLowerCase() }
+    // Handle standalone "seed" references last (least specific)
+    { from: 'seed project', to: `${name} project` },
+    { from: 'seed', to: name.split('-')[0] || 'project' },
   ];
 
   try {
@@ -340,6 +377,11 @@ by looking for seed-* names in package.json files, or by using the directory nam
     // Rename directories and files
     console.log('🔄 Renaming directories and files...');
     
+    // Get the parent directory of the current working directory
+    const currentDir = process.cwd();
+    const parentDir = path.dirname(currentDir);
+    const baseName = path.basename(currentDir);
+    
     if (isDotNet) {
       // Rename directories for .NET projects
       renameIfExists(
@@ -373,28 +415,36 @@ by looking for seed-* names in package.json files, or by using the directory nam
       // Check for directories that match the seed project name in various formats
       
       // Try kebab-case directory (most common for Node.js projects)
-      renameIfExists(
-        path.join(process.cwd(), seedConfig.kebab),
-        path.join(process.cwd(), name.toLowerCase())
-      );
+      if (baseName === seedConfig.kebab) {
+        renameIfExists(
+          currentDir,
+          path.join(parentDir, name.toLowerCase())
+        );
+      }
       
       // Try PascalCase directory
-      renameIfExists(
-        path.join(process.cwd(), seedConfig.pascal),
-        path.join(process.cwd(), namePascal)
-      );
+      if (baseName === seedConfig.pascal) {
+        renameIfExists(
+          currentDir,
+          path.join(parentDir, namePascal)
+        );
+      }
       
       // Try CamelCase directory
-      renameIfExists(
-        path.join(process.cwd(), seedConfig.camel),
-        path.join(process.cwd(), nameCamel)
-      );
+      if (baseName === seedConfig.camel) {
+        renameIfExists(
+          currentDir,
+          path.join(parentDir, nameCamel)
+        );
+      }
       
       // Try snake_case directory
-      renameIfExists(
-        path.join(process.cwd(), seedConfig.snake),
-        path.join(process.cwd(), nameSnake)
-      );
+      if (baseName === seedConfig.snake) {
+        renameIfExists(
+          currentDir,
+          path.join(parentDir, nameSnake)
+        );
+      }
     }
     
     console.log(`\n✅ Project successfully renamed to: ${name}`);
@@ -474,7 +524,7 @@ by looking for seed-* names in package.json files, or by using the directory nam
   } catch (error) {
     console.error('❌ Error during rename process:', error);
     console.error('Stack:', error.stack);
-    process.exit(1);
+    utils.exit(1);
   }
 }
 
@@ -498,6 +548,7 @@ function renameIfExists(oldPath, newPath) {
 
 // Export the functionality for programmatic use
 module.exports = main;
+module.exports.utils = utils;
 
 // Run the main function if this script is executed directly
 if (require.main === module) {
