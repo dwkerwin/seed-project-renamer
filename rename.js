@@ -307,8 +307,17 @@ by looking for seed-* names in package.json files, or by using the directory nam
     { from: seedConfig.snake, to: nameSnake },
     { from: seedConfig.snakePascal, to: nameSnakePascal },
     
+    // Handle exact namespace patterns for .NET projects (like SeedDotnetRestapiEcsFargate)
+    // This catches patterns that don't match the standard camel/pascal case due to mixed casing
+    { from: seedConfig.kebab.replace(/-/g, ''), to: nameCamel },
+    
+    // Handle the exact mixed-case namespace pattern found in .NET projects
+    { from: 'SeedDotnetRestapiEcsFargate', to: nameCamel },
+    
     // Handle standalone "seed" references last (least specific)
+    { from: 'Seed Project', to: `${name.charAt(0).toUpperCase() + name.slice(1)} Project` },
     { from: 'seed project', to: `${name} project` },
+    { from: 'Seed', to: name.charAt(0).toUpperCase() + name.slice(1) },
     { from: 'seed', to: name.split('-')[0] || 'project' },
   ];
 
@@ -394,11 +403,25 @@ by looking for seed-* names in package.json files, or by using the directory nam
         path.join(process.cwd(), `${nameCamel}.Tests`)
       );
       
-      // Rename solution file
-      renameIfExists(
-        path.join(process.cwd(), `${seedConfig.camel}.sln`), 
-        path.join(process.cwd(), `${nameCamel}.sln`)
-      );
+      // Rename solution file - look for any .sln file that contains the seed name patterns
+      const solutionFiles = fs.readdirSync(process.cwd()).filter(file => {
+        if (!file.endsWith('.sln')) return false;
+        const fileLower = file.toLowerCase();
+        
+        // Try multiple patterns to match the solution file
+        return fileLower.includes(seedConfig.kebab.toLowerCase().replace(/-/g, '')) ||
+               fileLower.includes(seedConfig.pascal.toLowerCase()) ||
+               fileLower.includes(seedConfig.camel.toLowerCase());
+      });
+      
+      if (solutionFiles.length > 0) {
+        const oldSolutionFile = solutionFiles[0];
+        const newSolutionFile = `${nameCamel}.sln`;
+        renameIfExists(
+          path.join(process.cwd(), oldSolutionFile), 
+          path.join(process.cwd(), newSolutionFile)
+        );
+      }
       
       // Rename .csproj files
       renameIfExists(
@@ -410,6 +433,14 @@ by looking for seed-* names in package.json files, or by using the directory nam
         path.join(process.cwd(), `${nameCamel}.Tests`, `${seedConfig.camel}.Tests.csproj`), 
         path.join(process.cwd(), `${nameCamel}.Tests`, `${nameCamel}.Tests.csproj`)
       );
+      
+      // Rename the main project directory for .NET projects
+      if (baseName === seedConfig.kebab) {
+        renameIfExists(
+          currentDir,
+          path.join(parentDir, name.toLowerCase())
+        );
+      }
     } else {
       // Rename directories for non-.NET projects (Node.js, etc.)
       // Check for directories that match the seed project name in various formats

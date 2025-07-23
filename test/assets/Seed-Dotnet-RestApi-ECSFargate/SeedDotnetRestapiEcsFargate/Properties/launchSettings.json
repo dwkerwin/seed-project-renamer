@@ -1,0 +1,11 @@
+{
+    "profiles": {
+      "Kestrel": {
+        "commandName": "Project",
+        "dotnetRunMessages": true,
+        "launchBrowser": false,
+        "applicationUrl": "https://0.0.0.0:8081;http://0.0.0.0:8080"
+      }
+    }
+  }
+  
