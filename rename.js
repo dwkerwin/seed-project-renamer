@@ -24,6 +24,7 @@ function generateSeedVariations(seedName) {
     .map(part => part.charAt(0).toUpperCase() + part.slice(1))
     .join('');
   const snake = seedName.replace(/-/g, '_').toLowerCase();
+  const lowerKebab = seedName.toLowerCase();
   
   // Create shortened version for target group name if needed
   let tg = seedName;
@@ -32,7 +33,7 @@ function generateSeedVariations(seedName) {
   }
   tg += "-tg";
   
-  return { kebab, pascal, camel, snake, tg };
+  return { kebab, pascal, camel, snake, tg, lowerKebab };
 }
 
 // Auto-detect seed project name from package.json or folder name
@@ -257,6 +258,7 @@ by looking for seed-* names in package.json files, or by using the directory nam
   // Define replacements
   const replacements = [
     { from: seedConfig.kebab, to: name.toLowerCase() },
+    { from: seedConfig.lowerKebab, to: name.toLowerCase() },
     { from: seedConfig.pascal, to: namePascal },
     { from: seedConfig.camel, to: nameCamel },
     { from: seedConfig.snake, to: nameSnake },
