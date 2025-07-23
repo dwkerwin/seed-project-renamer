@@ -17,24 +17,27 @@ const { glob } = require('glob');
 // Generate seed project name variations
 function generateSeedVariations(seedName) {
   const kebab = seedName;
+  const lowerKebab = seedName.toLowerCase();
+  
   const pascal = seedName.split('-')
     .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-    .join('-');
+    .join('');
+
   const camel = seedName.split('-')
     .map(part => part.charAt(0).toUpperCase() + part.slice(1))
     .join('');
+
   const snake = seedName.replace(/-/g, '_').toLowerCase();
-  const lowerKebab = seedName.toLowerCase();
   
   // Create shortened version for target group name if needed
-  let tg = seedName;
+  let tgBase = seedName;
   if (seedName.length > 29) {
-    tg = seedName.replace(/[aeiou]/g, '').substring(0, 29);
+    tgBase = seedName.replace(/[aeiou]/g, '').substring(0, 29);
   }
-  const tgPascal = tg + "-tg";
-  const tgLower = tg.toLowerCase() + "-tg";
+  const tg = tgBase + "-tg";
+  const tgLower = tgBase.toLowerCase() + "-tg";
   
-  return { kebab, pascal, camel, snake, tg: tgPascal, tgLower, lowerKebab };
+  return { kebab, pascal, camel, snake, tg, tgLower, lowerKebab };
 }
 
 // Auto-detect seed project name from package.json or folder name
@@ -258,13 +261,18 @@ by looking for seed-* names in package.json files, or by using the directory nam
 
   // Define replacements
   const replacements = [
-    { from: seedConfig.kebab, to: name.toLowerCase() },
-    { from: seedConfig.lowerKebab, to: name.toLowerCase() },
+    // Handle the more specific target group names first
+    { from: seedConfig.tg, to: nameTg },
+    { from: seedConfig.tgLower, to: nameTg.toLowerCase() },
+
+    // Handle structured cases
     { from: seedConfig.pascal, to: namePascal },
     { from: seedConfig.camel, to: nameCamel },
     { from: seedConfig.snake, to: nameSnake },
-    { from: seedConfig.tg, to: nameTg },
-    { from: seedConfig.tgLower, to: nameTg }
+    
+    // Handle the general kebab case last
+    { from: seedConfig.kebab, to: name },
+    { from: seedConfig.lowerKebab, to: name.toLowerCase() }
   ];
 
   try {
