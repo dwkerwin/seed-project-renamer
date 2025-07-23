@@ -31,9 +31,10 @@ function generateSeedVariations(seedName) {
   if (seedName.length > 29) {
     tg = seedName.replace(/[aeiou]/g, '').substring(0, 29);
   }
-  tg += "-tg";
+  const tgPascal = tg + "-tg";
+  const tgLower = tg.toLowerCase() + "-tg";
   
-  return { kebab, pascal, camel, snake, tg, lowerKebab };
+  return { kebab, pascal, camel, snake, tg: tgPascal, tgLower, lowerKebab };
 }
 
 // Auto-detect seed project name from package.json or folder name
@@ -262,7 +263,8 @@ by looking for seed-* names in package.json files, or by using the directory nam
     { from: seedConfig.pascal, to: namePascal },
     { from: seedConfig.camel, to: nameCamel },
     { from: seedConfig.snake, to: nameSnake },
-    { from: seedConfig.tg, to: nameTg }
+    { from: seedConfig.tg, to: nameTg },
+    { from: seedConfig.tgLower, to: nameTg }
   ];
 
   try {
