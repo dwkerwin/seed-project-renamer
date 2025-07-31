@@ -115,7 +115,7 @@ describe('Seed Project Renamer', () => {
             process.chdir(originalCwd);
           } catch (error) {
             // If the chdir fails, we're probably in a renamed directory
-            // Just change to the parent directory
+            // Just change to the parent  directory
             process.chdir(path.dirname(originalCwd));
           }
         }

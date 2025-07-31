@@ -1,6 +1,6 @@
 {
   "name": "@dwkerwin/seed-project-renamer",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A utility for bootstrapping seed projects by consistently renaming all references across files, supporting multiple naming conventions and explicit source project specification via --from parameter",
   "main": "index.js",
   "bin": {
