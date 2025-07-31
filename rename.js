@@ -19,16 +19,16 @@ function generateSeedVariations(seedName) {
   const kebab = seedName;
   const lowerKebab = seedName.toLowerCase();
   
-  const pascal = seedName.split('-')
+  const pascal = seedName.split(/[-.]/)
     .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
     .join('');
 
-  const camel = seedName.split('-')
+  const camel = seedName.split(/[-.]/)
     .map(part => part.charAt(0).toUpperCase() + part.slice(1))
     .join('');
 
-  const snake = seedName.replace(/-/g, '_').toLowerCase();
-  const snakePascal = seedName.split('-')
+  const snake = seedName.replace(/[-.]/g, '_').toLowerCase();
+  const snakePascal = seedName.split(/[-.]/)
     .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
     .join('_');
   
@@ -182,9 +182,9 @@ by looking for seed-* names in package.json files, or by using the directory nam
     }
   }
 
-  // Validate project name format (allow letters, numbers, and hyphens)
-  if (!/^[a-zA-Z0-9-]+$/.test(name)) {
-    console.error('❌ Error: Project name must contain only letters, numbers, and hyphens.');
+  // Validate project name format (allow letters, numbers, hyphens, and dots)
+  if (!/^[a-zA-Z0-9.-]+$/.test(name)) {
+    console.error('❌ Error: Project name must contain only letters, numbers, hyphens, and dots.');
     utils.exit(1);
   }
 
@@ -195,26 +195,26 @@ by looking for seed-* names in package.json files, or by using the directory nam
   console.log(`🚀 Renaming project to: ${name}`);
 
   // Generate variations of the new name
-  const namePascal = name.split('-')
+  const namePascal = name.split(/[-.]/)
     .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
     .join('-');
 
-  // Convert to CamelCase (remove hyphens, capitalize each word)
-  const nameCamel = name.split('-')
+  // Convert to CamelCase (remove hyphens and dots, capitalize each word)
+  const nameCamel = name.split(/[-.]/)
     .map(part => part.charAt(0).toUpperCase() + part.slice(1))
     .join('');
 
   // Convert to snake_case (lowercase with underscores)
-  const nameSnake = name.replace(/-/g, '_').toLowerCase();
-  const nameSnakePascal = name.split('-')
+  const nameSnake = name.replace(/[-.]/g, '_').toLowerCase();
+  const nameSnakePascal = name.split(/[-.]/)
     .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
     .join('_');
 
   // Generate abbreviated version for the new name using the same simple logic
-  const nameParts = name.split('-');
+  const nameParts = name.split(/[-\.]/);
   let nameAbbreviated = '';
   if (nameParts.length >= 2) {
-    // For "my-new-project", this creates "my_new_project" (just use all parts for new names)
+    // For "my-new-project" or "my.new.project", this creates "my_new_project" (just use all parts for new names)
     nameAbbreviated = nameParts.join('_');
   }
 
